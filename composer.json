@@ -1,0 +1,41 @@
+{
+  "type": "think-admin-plugin",
+  "name": "rotoos/think-plugs-workerman",
+  "license": "Apache-2.0",
+  "description": "Workerman HttpServer for DeAdmin",
+  "authors": [
+    {
+      "name": "rotoos",
+      "email": "87291030@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "workerman/workerman": "^4.1",
+    "rotoos/de-install": "^1.0||dev-master",
+    "rotoos/think-core": "^6.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "plugin\\worker\\": "src"
+    }
+  },
+  "extra": {
+    "think": {
+      "services": [
+        "plugin\\worker\\Service"
+      ]
+    },
+    "plugin": {
+      "copy": {
+        "stc/worker.php": "config/worker.php"
+      }
+    }
+  },
+  "minimum-stability": "dev",
+  "config": {
+    "allow-plugins": {
+      "rotoos/de-install": false
+    }
+  }
+}
