@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace plugin\worker;
 
 use FilesystemIterator;
@@ -31,6 +33,9 @@ abstract class Monitor
      * @var string
      */
     private static $lockFile;
+
+    private static $filesTimerId = -1;
+    private static $memoryTimerId = -1;
 
     /**
      * @return string
@@ -107,7 +112,8 @@ abstract class Monitor
             echo "\nMonitor file change turned off because exec() has been disabled by disable_functions setting in " . PHP_CONFIG_FILE_PATH . "/php.ini\n";
             return false;
         } else {
-            Timer::add($interval, [self::class, 'checkAllFilesChange']);
+            if (self::$filesTimerId > -1) Timer::del(self::$filesTimerId);
+            self::$filesTimerId = Timer::add($interval, [self::class, 'checkAllFilesChange']);
             return true;
         }
     }
@@ -123,7 +129,8 @@ abstract class Monitor
         if ($interval <= 0) return false;
         if (!Worker::getAllWorkers()) return false;
         if ($memoryLimit = self::getMemoryLimit($limit ?: self::defaultMaxMemory)) {
-            Timer::add($interval, [self::class, 'checkMemory'], [$memoryLimit]);
+            if (self::$memoryTimerId > -1) Timer::del(self::$memoryTimerId);
+            self::$memoryTimerId = Timer::add($interval, [self::class, 'checkMemory'], [$memoryLimit]);
             return true;
         } else {
             return false;
