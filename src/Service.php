@@ -20,4 +20,9 @@ class Service extends Plugin
     {
         return [];
     }
+
+    public static function onRemove()
+    {
+        @unlink('config/worker.php');
+    }
 }

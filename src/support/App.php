@@ -27,23 +27,35 @@ class App extends \think\App
         try {
             // 初始化请求
             $this->delete('view');
+            $this->delete('cookie');
+
             $this->db->clearQueryTimes();
             $this->beginTime = microtime(true);
             $this->beginMem = memory_get_usage();
             while (ob_get_level() > 1) ob_end_clean();
 
             // 切换进程数据
+            $this->session->clear();
             $this->session->setId($request->sessionId());
             $this->request->withWorkerRequest($connection, $request);
 
             // 开始处理请求
             ob_start();
             $thinkResponse = $this->http->run($this->request);
-            $body = ob_get_clean();
 
             // 处理请求结果
             $header = $thinkResponse->getHeader() + ['Server' => 'x-server'];
-            $response = new WorkerResponse($thinkResponse->getCode(), $header, $body . $thinkResponse->getContent());
+            $response = new WorkerResponse($thinkResponse->getCode(), $header);
+
+            // 写入 Cookie 数据
+            foreach ($this->cookie->getCookie() as $name => $value) {
+                [$value, $expire, $option] = $value;
+                $response->cookie($name, $value, $expire ?: null, $option['path'], $option['domain'], (bool)$option['secure'], (bool)$option['httponly'], $option['samesite']);
+            }
+
+            // 返回完整响应内容
+            $body = ob_get_clean();
+            $response->withBody($body . $thinkResponse->getContent());
             if (strtolower($request->header('connection')) === 'keep-alive') {
                 $connection->send($response);
             } else {

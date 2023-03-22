@@ -6,11 +6,12 @@ namespace plugin\worker\support;
 
 use plugin\worker\Monitor;
 use plugin\worker\Server;
-use think\admin\install\Support;
+use think\admin\service\ProcessService;
 use think\admin\service\RuntimeService;
 use Workerman\Connection\TcpConnection;
 use Workerman\Protocols\Http\Request as WorkerRequest;
 use Workerman\Protocols\Http\Response as WorkerResponse;
+use Workerman\Protocols\Http\Session;
 use Workerman\Timer;
 use Workerman\Worker;
 
@@ -25,12 +26,16 @@ class Http extends Server
     /** @var array */
     protected $monitor;
 
-    public function __construct(string $host, int $port, array $context = [])
+    /** @var callable */
+    protected $callable;
+
+    public function __construct(string $host, int $port, array $context = [], ?callable $callable = null)
     {
         $this->port = $port;
         $this->host = $host;
         $this->context = $context;
         $this->protocol = 'http';
+        $this->callable = $callable;
         parent::__construct();
     }
 
@@ -49,13 +54,23 @@ class Http extends Server
         $this->app->bind('think\Request', Request::class);
         RuntimeService::init($this->app)->initialize();
 
+        // 初始化会话
+        Session::$name = $this->app->config->get('session.name', 'ssid');
+        Session::$domain = $this->app->config->get('cookie.domain', '');
+        Session::$secure = $this->app->config->get('cookie.secure', false);
+        Session::$httpOnly = $this->app->config->get('cookie.httponly', true);
+        Session::$sameSite = $this->app->config->get('cookie.samesite', '');
+        Session::$lifetime = $this->app->config->get('session.expire', 7200);
+        Session::$cookiePath = $this->app->config->get('cookie.path', '/');
+        Session::$cookieLifetime = $this->app->config->get('cookie.expire', 0);
+
         // 定时发起数据库请求，防止失效而锁死
         Timer::add(60, function () {
             $this->app->db->query(sprintf('select %d as stime', time()));
         });
 
         // 设置文件变化及内存超限监控管理
-        if (!Support::isWin() && 0 == $worker->id && $this->monitor) {
+        if (!ProcessService::isWin() && 0 == $worker->id && $this->monitor) {
             Monitor::listen($this->monitor['path'] ?? []);
             Monitor::enableFilesMonitor($this->monitor['files_interval'] ?? 0);
             Monitor::enableMemoryMonitor($this->monitor['memory_interval'] ?? 0, $this->monitor['memory_limit'] ?? null);
@@ -82,6 +97,8 @@ class Http extends Server
             // 文件修改过或者没有 if-modified-since 头则发送文件
             $response = (new WorkerResponse())->withFile($file);
             $connection->send($response->header('Server', 'x-server'));
+        } elseif (is_callable($this->callable) && call_user_func($this->callable, $connection, $request) === true) {
+            return;
         } else {
             $this->app->worker($connection, $request);
         }
@@ -95,29 +112,6 @@ class Http extends Server
     public function setRoot(string $path)
     {
         $this->root = $path;
-    }
-
-    /**
-     * 设置进程属性配置
-     * @param array $option
-     * @return void
-     */
-    public function setOption(array $option)
-    {
-        if (count($option) > 0) foreach ($option as $key => $val) {
-            $this->worker->$key = $val;
-        }
-    }
-
-    /**
-     * 设置运行属性配置
-     * @param string $name
-     * @param mixed $value
-     * @return void
-     */
-    public function setStaticOption(string $name, $value)
-    {
-        Worker::${$name} = $value;
     }
 
     /**

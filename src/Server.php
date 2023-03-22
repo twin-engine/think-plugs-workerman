@@ -47,11 +47,6 @@ abstract class Server
 
     abstract protected function init();
 
-    public function start()
-    {
-        Worker::runAll();
-    }
-
     public function __set(string $name, $value)
     {
         $this->worker->$name = $value;
