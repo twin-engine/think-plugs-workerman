@@ -1,6 +1,6 @@
 {
   "type": "think-admin-plugin",
-  "name": "rotoos/think-plugs-workerman",
+  "name": "rotoos/think-workerman",
   "license": "Apache-2.0",
   "description": "Workerman HttpServer for DeAdmin",
   "authors": [

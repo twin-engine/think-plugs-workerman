@@ -9,7 +9,7 @@ use think\admin\Plugin;
 
 class Service extends Plugin
 {
-    protected $package = 'rotoos/think-plugs-workerman';
+    protected $package = 'rotoos/think-workerman';
 
     public function register()
     {
