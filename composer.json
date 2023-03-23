@@ -27,7 +27,7 @@
       ]
     },
     "plugin": {
-      "copy": {
+      "init": {
         "stc/worker.php": "config/worker.php"
       }
     }
