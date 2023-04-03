@@ -13,7 +13,7 @@
     "php": ">=7.1",
     "workerman/workerman": "^4.1",
     "rotoos/de-install": "^1.0||dev-master",
-    "rotoos/think-core": "^6.1"
+    "rotoos/think-core": "^6.0"
   },
   "autoload": {
     "psr-4": {
