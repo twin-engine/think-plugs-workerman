@@ -4,7 +4,6 @@ declare (strict_types=1);
 
 namespace plugin\worker\support;
 
-
 use think\Cookie;
 use Workerman\Protocols\Http\Response;
 

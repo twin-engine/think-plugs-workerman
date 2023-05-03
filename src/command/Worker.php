@@ -4,6 +4,8 @@ declare (strict_types=1);
 
 namespace plugin\worker\command;
 
+use GatewayWorker\BusinessWorker;
+use GatewayWorker\Gateway;
 use plugin\worker\Server;
 use plugin\worker\support\HttpServer;
 use think\admin\Command;
@@ -15,7 +17,7 @@ use Workerman\Worker as Workerman;
 
 /**
  * Worker
- * Class Worker
+ * @class Worker
  * @package think\admin\server\command
  */
 class Worker extends Command
@@ -30,7 +32,7 @@ class Worker extends Command
             ->addOption('port', 'p', Option::VALUE_OPTIONAL, 'the port of workerman server.')
             ->addOption('custom', 'c', Option::VALUE_OPTIONAL, 'the custom workerman server.', 'default')
             ->addOption('daemon', 'd', Option::VALUE_NONE, 'Run the workerman server in daemon mode.')
-            ->setDescription('Workerman Http Server for DeAdmin');
+            ->setDescription('Workerman Http Server for ThinkAdmin');
     }
 
     public function execute(Input $input, Output $output)
@@ -99,7 +101,7 @@ class Worker extends Command
                 $first = strstr($listen, ':', true) ?: 'unknow';
                 $output->writeln("Starting Workerman {$first} server...");
             }
-            $worker = new Workerman($listen, $this->config['context'] ?? []);
+            $worker = $this->makeWorker($this->config['type'] ?? '', $listen, $this->config['context'] ?? []);
         }
 
         // 守护进程模式
@@ -127,6 +129,29 @@ class Worker extends Command
 
         // 应用并启动服务
         Workerman::runAll();
+    }
+
+    /**
+     * 创建 Worker 进程实例
+     * @param string $type
+     * @param string $listen
+     * @param array $context
+     * @return BusinessWorker|Gateway|Workerman
+     */
+    protected function makeWorker(string $type, string $listen, array $context = [])
+    {
+        switch (strtolower($type)) {
+            case 'gateway':
+                if (class_exists('GatewayWorker\Gateway')) return new Gateway($listen, $context);
+                $this->output->error("请执行 composer require workerman/gateway-worker 安装 GatewayWorker 组件");
+                exit(1);
+            case 'business':
+                if (class_exists('GatewayWorker\BusinessWorker')) return new BusinessWorker($listen, $context);
+                $this->output->error("请执行 composer require workerman/gateway-worker 安装 GatewayWorker 组件");
+                exit(1);
+            default:
+                return new Workerman($listen, $context);
+        }
     }
 
     /**

@@ -12,7 +12,8 @@
   "require": {
     "php": ">=7.1",
     "workerman/workerman": "^4.1",
-    "rotoos/de-install": "^1.0||dev-master"
+    "rotoos/de-install": "^1.0||dev-master",
+    "workerman/gateway-worker": "3.x-dev"
   },
   "autoload": {
     "psr-4": {
